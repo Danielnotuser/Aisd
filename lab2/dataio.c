@@ -2,11 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#ifdef USE_LIST
-#include "list_queue.h"
-#else
-#include "vect_queue.h"
-#endif
+#include "func.h"
 
 #define DELIM "/"
 
@@ -46,6 +42,17 @@ int read_nat(int *n, FILE *inp, FILE *out)
 	} while(1);
 }
 
+Man *man_alloc()
+{
+	Man *a = (Man*) calloc(1, sizeof(Man));
+	if (!a)
+	{
+		fprintf(stderr, "Error! Memory allocation error.");
+		return NULL;
+	}
+	return a;
+}
+
 int check_buf(char *buf)
 {
 	int i = 0;
@@ -54,7 +61,7 @@ int check_buf(char *buf)
 		fprintf(stderr, "Error! Wrong input.\n");
 		return 1;
 	}
-	while(buf = strchr(buf, '/'))
+	while((buf = strchr(buf, '/')) != NULL)
 	{
 		i++;
 		buf++;
@@ -86,7 +93,6 @@ int man_input(Man **a, char **buf)
 		return 1;
 	}
 	(*a)->ta = atoi(ptr);
-	char *ptr1 = ptr;
 	ptr = strtok(NULL, DELIM);
 	if (!ptr) 
 	{

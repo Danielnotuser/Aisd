@@ -1,13 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef USE_LIST
-#include "list_queue.h"
-#else
-#include "vect_queue.h"
-#endif
-
-// gcc -DUSE_LIST main.c list.c  vect.c
+#include "func.h"
 
 int main()
 {
