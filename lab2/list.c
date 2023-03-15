@@ -48,7 +48,7 @@ void push(Queue *q, Man *a)
 
 void pop(Queue *q)
 {
-	if (q)
+	if (q->head)
 	{
 		Man *a = (q->head)->next;
 		free((q->head)->id);
