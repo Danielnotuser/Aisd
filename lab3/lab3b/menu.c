@@ -7,11 +7,15 @@
 int dlg_load(Table* tbl)
 {
 	int sz;
-	char *fname = NULL;
+	char *fname = (char*) calloc(40, sizeof(char));
 	printf("Enter file name: ");
 	int err = scanf("%s", fname);
-	if (err)
+	if (err == -1)
+	{
+		free(fname);
 		return 0;
+	}
+	fname = (char*) realloc(fname, (strlen(fname)+1) * sizeof(char));
 	if (strcmp(strrchr(fname, '.'), ".bin"))
 	{
 		printf("Error! Wrong file name.");
@@ -22,7 +26,10 @@ int dlg_load(Table* tbl)
 		printf("Enter size of table: ");
 		err = read_nat(&sz);
 		if (err)
+		{
+			free(fname);
 			return 0;
+		}
 		create(tbl, fname, sz);
 	}
 	free(fname);
@@ -105,7 +112,7 @@ int dlg_find(Table *tbl)
 	err = find(tbl, par, &res);
 	if (!err)
 	{
-		printf("Finded table:\n");
+		printf("Found table:\n");
 		print(&res, stdout);
 		free_table(&res);
 	}
@@ -198,6 +205,7 @@ int dlg_import(Table *tbl_curr)
 
 int dlg_save(Table* tbl)
 {
+	fwrite(&(tbl->msize), sizeof(int), 1, tbl->fd);
 	fseek(tbl->fd, sizeof(int), SEEK_SET);
 	fwrite(&(tbl->csize), sizeof(int), 1, tbl->fd);
 	fwrite(tbl->arr, sizeof(Item), tbl->csize, tbl->fd);

@@ -81,7 +81,7 @@ int dlg_find(Table *tbl)
 	err = find(tbl, par, &res);
 	if (!err)
 	{
-		printf("Finded table:\n");
+		printf("Found table:\n");
 		print(&res, stdout);
 		free_table(&res);
 	}
@@ -116,6 +116,7 @@ int dlg_import(Table *tbl_curr)
 	char *inp = (char*) calloc(40, sizeof(char));
 	printf("Enter file name: ");
 	scanf("%s", inp);
+	inp[strlen(inp)] = '\0';
 	inp = (char*) realloc(inp, strlen(inp) + 1);
 	if (strcmp(strrchr(inp, '.'), ".txt"))
 	{
@@ -125,7 +126,8 @@ int dlg_import(Table *tbl_curr)
 	FILE *f = fopen(inp, "r");
 	if (f == NULL)
 	{
-		printf("Error! Can't open file \"%s\"", inp);
+		printf("Error! Can't open file \"%s\"\n", inp);
+		free(inp);
 		return 1;
 	}
 	int size;
@@ -158,14 +160,16 @@ int dlg_import(Table *tbl_curr)
 			err = fscanf(f, "%[^\n]", info);
 			pos = ftell(f) - pos;
 			info[pos] = '\0';
-			info = (char*) realloc(info, pos * sizeof(char));
+			info = (char*) realloc(info, (pos + 1) * sizeof(char));
 			add_err = insert(&tbl, key, par, info);	
+			free(info);
 			if (!add_err) i++;
 			
 		} while (err != -1);
 		free_table(tbl_curr);
-		tbl.csize = i;
-		tbl_curr = &tbl;
+		tbl_curr->csize = i;
+		tbl_curr->msize = size;
+		tbl_curr->arr = tbl.arr;
 	}
 	free(inp);
 	fclose(f);

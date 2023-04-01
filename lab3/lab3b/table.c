@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "menu.h"
@@ -27,6 +28,14 @@ int insert(Table *tbl, unsigned int key, unsigned int par, char *info)
 	return 0;
 }
 
+int file_len(Table *tbl)
+{
+	int len = 2 * sizeof(int) + tbl->msize * sizeof(Item);
+	for (int i = 0; i < tbl->csize; i++)
+		len += tbl->arr[i].len * sizeof(char);
+	return len;	
+}
+
 int delete(Table *tbl, unsigned int key)
 {
 	int k = -1;
@@ -39,15 +48,49 @@ int delete(Table *tbl, unsigned int key)
 	}
 	if (k == -1)
 		return 2;
-	/*fseek(tbl->fd, (tbl->arr)[tbl->csize-1].offset, SEEK_SET);
-	char *info = (char*) calloc((tbl->arr)[tbl->csize-1].len, sizeof(char);)
+	fseek(tbl->fd, (tbl->arr)[tbl->csize-1].offset, SEEK_SET);
+	char *info = (char*) calloc((tbl->arr)[tbl->csize-1].len, sizeof(char));
 	fread(info, sizeof(char), (tbl->arr)[tbl->csize-1].len, tbl->fd);
-	fseek(tbl->fd, (tbl->arr)[k].offset, SEEK_SET);
-	fwrite
-	(tbl->arr)[k] = (tbl->arr)[tbl->csize-1];
-	Item a = {0, 0, 0, 0};
-	(tbl->arr)[tbl->csize-1] = a;#include <stdio.h>
-	tbl->csize -= 1;*/
+	Item last = (tbl->arr)[tbl->csize-1];
+	int len_curr = (tbl->arr)[k].len;
+	if (last.len > len_curr)
+	{
+		int chng = last.len - len_curr;
+		for (int i = tbl->csize-2; i > k; i--)
+		{
+			char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
+			fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
+			fread(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+			fseek(tbl->fd, (tbl->arr)[i].offset + chng, SEEK_SET);
+			(tbl->arr)[i].offset = ftell(tbl->fd);
+			fwrite(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+		}
+	}
+	else 
+	{
+		int offset = (tbl->arr)[k].offset;
+		(tbl->arr)[k] = last;
+		(tbl->arr)[k].offset = offset;
+		fseek(tbl->fd, (tbl->arr)[k].offset, SEEK_SET);
+		fwrite(info, sizeof(char), (tbl->arr)[k].len, tbl->fd);
+		if (last.len < len_curr)
+		{
+			int chng = len_curr - last.len;
+			for (int i = k+1; i < tbl->csize-1; i++)
+			{
+				char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
+				fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
+				fread(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+				fseek(tbl->fd, (tbl->arr)[i].offset - chng, SEEK_SET);
+				(tbl->arr)[i].offset = ftell(tbl->fd);
+				fwrite(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+			}		
+		}
+	}
+	Item b = {0, 0, 0, 0};
+	(tbl->arr)[tbl->csize-1] = b;
+	tbl->csize -= 1;
+	free(info);
 	return 0;
 }
 
@@ -65,6 +108,7 @@ int find(Table *tbl, unsigned int par, Table *res)
 			Item new;
 			new.key = (tbl->arr)[i].key;
 			new.par = par;
+			new.offset = (tbl->arr)[i].offset;
 			new.len = (tbl->arr)[i].len;
 			childs[rsize] = new;
 			rsize++;
@@ -75,6 +119,7 @@ int find(Table *tbl, unsigned int par, Table *res)
 	res->msize = rsize;
 	res->csize = rsize;
 	res->arr = childs;
+	res->fd = tbl->fd;
 	return 0;
 }
 

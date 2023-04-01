@@ -7,3 +7,6 @@ mem:
 file:
 	gcc -o b_lab $(PREF_FILE)*.c -g
 	valgrind ./b_lab
+clean:
+	rm a_lab
+	rm b_lab
