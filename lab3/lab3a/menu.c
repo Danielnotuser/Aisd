@@ -77,13 +77,18 @@ int dlg_find(Table *tbl)
 		return 0;
 	}
 	par = inp;
-	Table res;
-	err = find(tbl, par, &res);
+	Item *res = NULL;
+	int len = 0;
+	err = find(tbl, par, &res, &len);
 	if (!err)
 	{
 		printf("Found table:\n");
-		print(&res, stdout);
-		free_table(&res);
+		for (int i = 0; i < len; i++)
+		{
+			printf("par = %u, key = %u, info = %s\n", res[i].par, res[i].key, res[i].info);
+			free(res[i].info);
+		}
+		if (res) free(res);
 	}
 	else
 		printf("Error! %s\n", errmsgs[err]);

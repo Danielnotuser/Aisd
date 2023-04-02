@@ -86,7 +86,7 @@ int delete(Table *tbl, unsigned int key)
 		if (last.len < len_curr)
 		{
 			int chng = len_curr - last.len;
-			for (int i = k+1; i < tbl->csize-1; i++)
+			for (int i = k + 1; i < tbl->csize - 2; i++)
 			{
 				char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
 				fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
@@ -98,6 +98,7 @@ int delete(Table *tbl, unsigned int key)
 		}
 	}
 	int fd = fileno(tbl->fd);
+	fflush(tbl->fd);
 	ftruncate(fd, file_length - (len_curr * sizeof(char)));
 	Item b = {0, 0, 0, 0};
 	(tbl->arr)[tbl->csize-1] = b;
@@ -106,7 +107,7 @@ int delete(Table *tbl, unsigned int key)
 	return 0;
 }
 
-int find(Table *tbl, unsigned int par, Table *res)
+int find(Table *tbl, unsigned int par, Item **res, int *len)
 {
 	Item *childs = NULL;
 	int rsize = 0;
@@ -128,10 +129,8 @@ int find(Table *tbl, unsigned int par, Table *res)
 	}
 	if (rsize == 0)
 		return 1;
-	res->msize = rsize;
-	res->csize = rsize;
-	res->arr = childs;
-	res->fd = tbl->fd;
+	(*res) = childs;
+	(*len) = rsize;
 	return 0;
 }
 

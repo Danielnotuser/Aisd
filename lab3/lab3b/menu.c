@@ -109,13 +109,21 @@ int dlg_find(Table *tbl)
 		return 0;
 	}
 	par = inp;
-	Table res;
-	err = find(tbl, par, &res);
+	Item *res = NULL;
+	int len = 0;
+	err = find(tbl, par, &res, &len);
 	if (!err)
 	{
 		printf("Found table:\n");
-		print(&res, stdout);
-		free_table(&res);
+		for (int i = 0; i < len; i++)
+		{
+			fseek(tbl->fd, res[i].offset, SEEK_SET);
+			char *info = (char*) calloc((tbl->arr)[i].len, sizeof(char));
+			fread(info, sizeof(char), res[i].len, tbl->fd);
+			printf("par = %u, key = %u, info = %s\n", res[i].par, res[i].key, info);
+			free(info);
+		}
+		if (res) free(res);
 	}
 	else
 		printf("Error! %s\n", errmsgs[err]);
@@ -173,6 +181,7 @@ int dlg_import(Table *tbl_curr)
 		tbl.csize = 0;
 		tbl.fd = tbl_curr->fd;
 		int fd = fileno(tbl.fd);
+		fflush(tbl.fd);
 		ftruncate(fd, 0);
 		if (!tbl.fd) printf("error\n");
 		fseek(tbl.fd, 0, SEEK_SET);

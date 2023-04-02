@@ -16,7 +16,7 @@ int insert(Table *tbl, unsigned int key, unsigned int par, char *info)
 		if ((tbl->arr)[i].key == par)
 			p = 1;
 	}
-	if ((tbl->csize == 0 && par != 0) || (!p && par != 0))
+	if (!p && par != 0)
 		return 2;
 	char *info_item = strdup(info);
 	Item a = {key, par, info_item};
@@ -45,7 +45,7 @@ int delete(Table *tbl, unsigned int key)
 	return 0;
 }
 
-int find(Table *tbl, unsigned int par, Table *res)
+int find(Table *tbl, unsigned int par, Item **res, int *len)
 {
 	Item *childs = NULL;
 	int rsize = 0;
@@ -68,9 +68,8 @@ int find(Table *tbl, unsigned int par, Table *res)
 	}
 	if (rsize == 0)
 		return 1;
-	res->msize = rsize;
-	res->csize = rsize;
-	res->arr = childs;
+	(*res) = childs;
+	(*len) = rsize;
 	return 0;
 }
 

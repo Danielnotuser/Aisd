@@ -20,7 +20,7 @@ typedef struct Table {
 
 int insert(Table*, unsigned int, unsigned int, char*);
 int delete(Table*, unsigned int);
-int find(Table*, unsigned int, Table*);
+int find(Table*, unsigned int, Item**, int*);
 int load(Table*, char*);
 int create(Table*, char*, int);
 void print(Table*, FILE*);
