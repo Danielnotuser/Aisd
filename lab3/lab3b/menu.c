@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "menu.h"
@@ -150,7 +151,7 @@ int dlg_import(Table *tbl_curr)
 	inp = (char*) realloc(inp, strlen(inp) + 1);
 	if (strcmp(strrchr(inp, '.'), ".txt"))
 	{
-		printf("Error! Wrong file name.");
+		printf("Error! Wrong file name.\n");
 		return 1;
 	}
 	FILE *f = fopen(inp, "r");
@@ -170,6 +171,16 @@ int dlg_import(Table *tbl_curr)
 		tbl.msize = size;
 		tbl.arr = (Item*) calloc(size, sizeof(Item));
 		tbl.csize = 0;
+		tbl.fd = tbl_curr->fd;
+		int fd = fileno(tbl.fd);
+		ftruncate(fd, 0);
+		if (!tbl.fd) printf("error\n");
+		fseek(tbl.fd, 0, SEEK_SET);
+		fwrite(&(tbl.msize), sizeof(int), 1, tbl.fd);
+		fseek(tbl.fd, sizeof(int), SEEK_SET);
+		fwrite(&(tbl.csize), sizeof(int), 1, tbl.fd);
+		fseek(tbl.fd, sizeof(int) * 2, SEEK_SET);
+		fwrite(tbl.arr, sizeof(Item), size, tbl.fd);
 		do
 		{
 			err = fscanf(f, "%u%*c", &par);
@@ -189,14 +200,16 @@ int dlg_import(Table *tbl_curr)
 			err = fscanf(f, "%[^\n]", info);
 			pos = ftell(f) - pos;
 			info[pos] = '\0';
-			info = (char*) realloc(info, pos * sizeof(char));
+			info = (char*) realloc(info, (pos + 1) * sizeof(char));
 			add_err = insert(&tbl, key, par, info);	
+			free(info);
 			if (!add_err) i++;
 			
 		} while (err != -1);
 		free_table(tbl_curr);
-		tbl.csize = i;
-		tbl_curr = &tbl;
+		tbl_curr->csize = i;
+		tbl_curr->msize = size;
+		tbl_curr->arr = tbl.arr;
 	}
 	free(inp);
 	fclose(f);
@@ -205,9 +218,11 @@ int dlg_import(Table *tbl_curr)
 
 int dlg_save(Table* tbl)
 {
+	fseek(tbl->fd, 0, SEEK_SET);
 	fwrite(&(tbl->msize), sizeof(int), 1, tbl->fd);
 	fseek(tbl->fd, sizeof(int), SEEK_SET);
 	fwrite(&(tbl->csize), sizeof(int), 1, tbl->fd);
+	fseek(tbl->fd, sizeof(int) * 2, SEEK_SET);
 	fwrite(tbl->arr, sizeof(Item), tbl->csize, tbl->fd);
 	fclose(tbl->fd);
 	tbl->fd = NULL;

@@ -18,7 +18,7 @@ int insert(Table *tbl, unsigned int key, unsigned int par, char *info)
 			p = 1;
 	}
 	if ((tbl->csize == 0 && par != 0) || (!p && par != 0))
-		return 2;;
+		return 2;
 	fseek(tbl->fd, 0, SEEK_END);
 	int offset = ftell(tbl->fd);
 	Item a = {key, par, offset, strlen(info) + 1};
@@ -48,6 +48,16 @@ int delete(Table *tbl, unsigned int key)
 	}
 	if (k == -1)
 		return 2;
+	int file_length = file_len(tbl);
+	if (k == tbl->csize - 1)
+	{
+		int fd = fileno(tbl->fd);
+		ftruncate(fd, file_length - (tbl->arr)[k].len);
+		Item b = {0, 0, 0, 0};
+		(tbl->arr)[k] = b;
+		tbl->csize -= 1;
+		return 0;
+	}
 	fseek(tbl->fd, (tbl->arr)[tbl->csize-1].offset, SEEK_SET);
 	char *info = (char*) calloc((tbl->arr)[tbl->csize-1].len, sizeof(char));
 	fread(info, sizeof(char), (tbl->arr)[tbl->csize-1].len, tbl->fd);
@@ -87,6 +97,8 @@ int delete(Table *tbl, unsigned int key)
 			}		
 		}
 	}
+	int fd = fileno(tbl->fd);
+	ftruncate(fd, file_length - (len_curr * sizeof(char)));
 	Item b = {0, 0, 0, 0};
 	(tbl->arr)[tbl->csize-1] = b;
 	tbl->csize -= 1;
@@ -146,8 +158,8 @@ int create(Table *tbl, char *fname, int sz)
 		return 1;
 	}	
 	tbl->arr = (Item*) calloc(tbl->msize, sizeof(Item));
-	fwrite(&tbl->msize, sizeof(int), 1, tbl->fd);
-	fwrite(&tbl->csize, sizeof(int), 1, tbl->fd);
+	fwrite(&(tbl->msize), sizeof(int), 1, tbl->fd);
+	fwrite(&(tbl->csize), sizeof(int), 1, tbl->fd);
 	fwrite(tbl->arr, sizeof(Item), tbl->msize, tbl->fd);
 	return 0;
 }
