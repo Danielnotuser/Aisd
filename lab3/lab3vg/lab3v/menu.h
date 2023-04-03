@@ -6,12 +6,12 @@
 
 int read_val(int*);
 int read_nat(int*);
-void print(Table*, FILE*);
 int menu(const char*[], int);
 int dlg_add(Table*);
 int dlg_find(Table*);
 int dlg_delete(Table*);
 int dlg_print(Table*);
 int dlg_import(Table*);
+int print(Table*);
 
 #endif

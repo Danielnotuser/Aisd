@@ -25,13 +25,11 @@ int menu(const char *opts[], int n)
 
 int dlg_add(Table* tbl)
 {
-	const char *errmsgs[] = {"Item added.", "Duplicate key.", 
-							"Parent key doesn't exist.", "Table overflow.", 
-							"Memory allocation error."};
+	const char *errmsgs[] = {"Item added.", "Table overflow."};
 	int inp;
 	unsigned int key;
 	printf("Enter key: ");
-	err = read_nat(&inp);
+	int err = read_nat(&inp);
 	if (err)
 	{
 		printf("\nInput has been interrupted.\n");
@@ -57,10 +55,10 @@ int dlg_add(Table* tbl)
 
 int dlg_find(Table *tbl)
 {
-	const char *errmsgs[] = {"Ok", "This item is not a parent key.", 
+	const char *errmsgs[] = {"Ok.", "There is no item with this key.", 
 							"Memory allocation error."};
 	int inp;
-	unsigned int par;
+	unsigned int key;
 	printf("Enter key: ");
 	int err = read_nat(&inp);
 	if (err)
@@ -68,19 +66,16 @@ int dlg_find(Table *tbl)
 		printf("\nInput has been interrupted.\n");
 		return 0;
 	}
-	par = inp;
-	Item *res = NULL;
-	int len = 0;
-	err = find(tbl, par, &res, &len);
+	key = inp;
+	Table res;
+	err = find(tbl, key, &res);
 	if (!err)
 	{
-		printf("Found table:\n");
-		for (int i = 0; i < len; i++)
-		{
-			printf("par = %u, key = %u, info = %s\n", res[i].par, res[i].key, res[i].info);
-			free(res[i].info);
-		}
-		if (res) free(res);
+		printf("Found releases of that key:\n");
+		print(&res);
+		for (int i = 0; i < res.csize; i++)
+			free((res.arr)[i].info);
+		free(res.arr);
 	}
 	else
 		printf("Error! %s\n", errmsgs[err]);
@@ -89,8 +84,7 @@ int dlg_find(Table *tbl)
 
 int dlg_delete(Table *tbl)
 {
-	const char *errmsgs[] = {"Item removed.", "This item is a parent key.",
-							"There is no item with this key."};
+	const char *errmsgs[] = {"Item removed.", "There is no item with this key."};
 	int inp;
 	unsigned int key;
 	printf("Enter key: ");
@@ -128,7 +122,7 @@ int dlg_import(Table *tbl_curr)
 		return 1;
 	}
 	int size;
-	unsigned int par, key;
+	unsigned int key;
 	int err = fscanf(f, "%d%*c", &size);
 	if (err == 1)
 	{
@@ -155,6 +149,7 @@ int dlg_import(Table *tbl_curr)
 			add_err = insert(&tbl, key, info);	
 			free(info);
 			if (!add_err) i++;
+			else break;
 			
 		} while (err != -1);
 		free_table(tbl_curr);
@@ -164,11 +159,5 @@ int dlg_import(Table *tbl_curr)
 	}
 	free(inp);
 	fclose(f);
-	return 1;
-}
-
-int dlg_print(Table *tbl)
-{
-	print(tbl, stdout);
 	return 1;
 }
