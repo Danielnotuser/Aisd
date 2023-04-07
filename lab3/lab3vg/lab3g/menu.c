@@ -8,11 +8,12 @@
 int dlg_load(Table* tbl)
 {
 	int sz;
-	char *fname = (char*) calloc(40, sizeof(char));
+	char *fname;
 	printf("Enter file name: ");
-	int err = scanf("%s", fname);
-	if (err == -1)
+	int err = read_str(&fname);
+	if (err)
 	{
+		printf("\nInput has been interrupted.\n");
 		free(fname);
 		return 0;
 	}
@@ -78,10 +79,10 @@ int dlg_add(Table* tbl)
 		return 0;
 	}
 	key = inp;
-	char *info = (char*) calloc(40, sizeof(char));
+	char *info;
 	printf("Enter info: ");
-	err = scanf("%s", info);
-	if (err == -1)
+	err = read_str(&info);
+	if (err)
 	{
 		printf("\nInput has been interrupted.\n");
 		return 0;

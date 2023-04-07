@@ -36,10 +36,10 @@ int dlg_add(Table* tbl)
 		return 0;
 	}
 	key = inp;
-	char *info = (char*) calloc(40, sizeof(char));
+	char *info;
 	printf("Enter info: ");
-	err = scanf("%s", info);
-	if (err == -1)
+	err = read_str(&info);
+	if (err)
 	{
 		printf("\nInput has been interrupted.\n");
 		return 0;
@@ -104,9 +104,14 @@ int dlg_delete(Table *tbl)
 
 int dlg_import(Table *tbl_curr)
 {
-	char *inp = (char*) calloc(40, sizeof(char));
+	char *inp;
 	printf("Enter file name: ");
-	scanf("%s", inp);
+	int err = read_str(&inp);
+	if (err)
+	{
+		printf("\nInput has been interrupted.\n");
+		return 0;	
+	}
 	inp[strlen(inp)] = '\0';
 	inp = (char*) realloc(inp, strlen(inp) + 1);
 	if (strcmp(strrchr(inp, '.'), ".txt"))
@@ -123,7 +128,7 @@ int dlg_import(Table *tbl_curr)
 	}
 	int size;
 	unsigned int key;
-	int err = fscanf(f, "%d%*c", &size);
+	err = fscanf(f, "%d%*c", &size);
 	if (err == 1)
 	{
 		char *info;
@@ -131,7 +136,14 @@ int dlg_import(Table *tbl_curr)
 		Table tbl;
 		tbl.msize = size;
 		tbl.arr = (Item*) calloc(size, sizeof(Item));
+		if (!tbl.arr)
+		{
+			fprintf(stderr, "Error! Memory allocation error.");
+			return 1;
+		}
 		tbl.csize = 0;
+		for (int j = 0; j < tbl.msize; j++)
+			(tbl.arr)[j].busy = 0;
 		do
 		{
 			err = fscanf(f, "%u%*c%*c", &key);
@@ -141,6 +153,11 @@ int dlg_import(Table *tbl_curr)
 				continue;
 			}
 			info = (char*) calloc(40, sizeof(char));
+			if (!info)
+			{
+				fprintf(stderr, "Error! Memory allocation error.");
+				return 1;
+			}
 			pos = ftell(f);
 			err = fscanf(f, "%[^\n]", info);
 			pos = ftell(f) - pos;

@@ -53,7 +53,7 @@ int insert(Table *tbl, unsigned int key, char *info)
 
 int delete(Table *tbl, unsigned int key)
 {
-	int h, h_0;
+	int h, h_0 = hash(key);
 	int M = tbl->msize;
 	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{

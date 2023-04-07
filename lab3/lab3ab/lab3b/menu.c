@@ -8,7 +8,7 @@
 int dlg_load(Table* tbl)
 {
 	int sz;
-	char *fname = (char*) calloc(40, sizeof(char));
+	char *fname;
 	printf("Enter file name: ");
 	int err = read_str(&fname);
 	if (err)
@@ -78,7 +78,7 @@ int dlg_add(Table* tbl)
 		return 0;
 	}
 	key = inp;
-	char *info = (char*) calloc(40, sizeof(char));
+	char *info;
 	printf("Enter info: ");
 	err = read_str(&info);
 	if (err)
@@ -183,7 +183,7 @@ int dlg_delete(Table *tbl)
 
 int dlg_import(Table *tbl_curr)
 {
-	char *inp = (char*) calloc(40, sizeof(char));
+	char *inp;
 	printf("Enter file name: ");
 	int err = read_str(&inp);
 	if (err)

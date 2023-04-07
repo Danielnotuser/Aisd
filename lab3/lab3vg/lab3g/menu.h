@@ -6,6 +6,7 @@
 
 int read_val(int*);
 int read_nat(int*);
+int read_str(char**);
 
 int menu(const char*[], int);
 int dlg_load(Table*);
