@@ -6,11 +6,13 @@
 
 int read_val(int*);
 int read_nat(int*);
+int read_str(char**);
 
 int menu(const char*[], int);
 int dlg_load(Table*);
 int dlg_add(Table*);
 int dlg_find(Table*);
+int dlg_find_kids(Table*);
 int dlg_delete(Table*);
 int dlg_save(Table*);
 int dlg_print(Table*);

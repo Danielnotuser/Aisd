@@ -10,8 +10,8 @@ int dlg_load(Table* tbl)
 	int sz;
 	char *fname = (char*) calloc(40, sizeof(char));
 	printf("Enter file name: ");
-	int err = read_str(&fname);
-	if (err)
+	int err = scanf("%s", fname);
+	if (err == -1)
 	{
 		free(fname);
 		return 0;
@@ -80,8 +80,8 @@ int dlg_add(Table* tbl)
 	key = inp;
 	char *info = (char*) calloc(40, sizeof(char));
 	printf("Enter info: ");
-	err = read_str(&info);
-	if (err)
+	err = scanf("%s", info);
+	if (err == -1)
 	{
 		printf("\nInput has been interrupted.\n");
 		return 0;
@@ -98,36 +98,6 @@ int dlg_add(Table* tbl)
 int dlg_find(Table *tbl)
 {
 	const char *errmsgs[] = {"Ok", "This item is not a parent key.", 
-								"Memory allocation error."};
-	int inp;
-	unsigned int key;
-	printf("Enter key: ");
-	int err = read_nat(&inp);
-	if (err)
-	{
-		printf("\nInput has been interrupted.\n");
-		return 0;
-	}
-	key = inp;
-	Item a;
-	err = find(tbl, key, &a);
-	if (!err)
-	{
-		printf("Found key:\n");
-		fseek(tbl->fd, a.offset, SEEK_SET);
-		char *info = (char*) calloc(a.len, sizeof(char));
-		fread(info, sizeof(char), a.len, tbl->fd);
-		printf("par = %u, key = %u, info = %s\n", a.par, a.key, info);
-		free(info);
-	}
-	else
-		printf("Error! %s\n", errmsgs[err]);
-	return 1;
-}
-
-int dlg_find_kids(Table *tbl)
-{
-	const char *errmsgs[] = {"Ok", "This item is not a parent key.", 
 							"Memory allocation error."};
 	int inp;
 	unsigned int par;
@@ -141,7 +111,7 @@ int dlg_find_kids(Table *tbl)
 	par = inp;
 	Item *res = NULL;
 	int len = 0;
-	err = find_kids(tbl, par, &res, &len);
+	err = find(tbl, par, &res, &len);
 	if (!err)
 	{
 		printf("Found table:\n");
@@ -185,12 +155,7 @@ int dlg_import(Table *tbl_curr)
 {
 	char *inp = (char*) calloc(40, sizeof(char));
 	printf("Enter file name: ");
-	int err = read_str(&inp);
-	if (err)
-	{
-		printf("\nInput has been interrupted.\n");
-		return 0;	
-	}
+	scanf("%s", inp);
 	inp = (char*) realloc(inp, strlen(inp) + 1);
 	if (strcmp(strrchr(inp, '.'), ".txt"))
 	{
@@ -205,7 +170,7 @@ int dlg_import(Table *tbl_curr)
 	}
 	int size;
 	unsigned int par, key;
-	err = fscanf(f, "%d%*c", &size);
+	int err = fscanf(f, "%d%*c", &size);
 	if (err == 1)
 	{
 		char *info;
@@ -270,11 +235,5 @@ int dlg_save(Table* tbl)
 	fwrite(tbl->arr, sizeof(Item), tbl->csize, tbl->fd);
 	fclose(tbl->fd);
 	tbl->fd = NULL;
-	return 1;
-}
-
-int dlg_print(Table *tbl)
-{
-	print(tbl, stdout);
 	return 1;
 }

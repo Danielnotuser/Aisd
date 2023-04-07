@@ -65,6 +65,31 @@ int dlg_add(Table* tbl)
 
 int dlg_find(Table *tbl)
 {
+	const char *errmsgs[] = {"Ok", "There is no item with this key."};
+	int inp;
+	unsigned int key;
+	printf("Enter key: ");
+	int err = read_nat(&inp);
+	if (err)
+	{
+		printf("\nInput has been interrupted.\n");
+		return 0;
+	}
+	key = inp;
+	Item a;
+	err = find(tbl, key, &a);
+	if (!err)
+	{
+		printf("Found key:\n");
+		printf("par = %u, key = %u, info = %s\n", a.par, a.key, a.info);
+	}
+	else
+		printf("Error! %s\n", errmsgs[err]);
+	return 1;
+}
+
+int dlg_find_kids(Table *tbl)
+{
 	const char *errmsgs[] = {"Ok", "This item is not a parent key.", 
 							"Memory allocation error."};
 	int inp;
@@ -79,7 +104,7 @@ int dlg_find(Table *tbl)
 	par = inp;
 	Item *res = NULL;
 	int len = 0;
-	err = find(tbl, par, &res, &len);
+	err = find_kids(tbl, par, &res, &len);
 	if (!err)
 	{
 		printf("Found table:\n");

@@ -16,7 +16,8 @@ typedef struct Table {
 
 int insert(Table*, unsigned int, unsigned int, char*);
 int delete(Table*, unsigned int);
-int find(Table*, unsigned int, Item**, int*);
+int find(Table*, unsigned int, Item*);
+int find_kids(Table*, unsigned int, Item**, int*);
 void free_table(Table*);
 
 #endif

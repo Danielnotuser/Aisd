@@ -52,7 +52,6 @@ int delete(Table *tbl, unsigned int key)
 	if (k == tbl->csize - 1)
 	{
 		int fd = fileno(tbl->fd);
-		fflush(tbl->fd);
 		ftruncate(fd, file_length - (tbl->arr)[k].len);
 		Item b = {0, 0, 0, 0};
 		(tbl->arr)[k] = b;
@@ -108,20 +107,7 @@ int delete(Table *tbl, unsigned int key)
 	return 0;
 }
 
-int find(Table *tbl, unsigned int key, Item *a)
-{
-	for (int i = 0; i < tbl->csize; i++)
-	{
-		if ((tbl->arr)[i].key == key)
-		{
-			(*a) = (tbl->arr)[i];
-			return 0;
-		}
-	}	
-	return 1;
-}
-
-int find_kids(Table *tbl, unsigned int par, Item **res, int *len)
+int find(Table *tbl, unsigned int par, Item **res, int *len)
 {
 	Item *childs = NULL;
 	int rsize = 0;
@@ -156,6 +142,10 @@ int load(Table *tbl, char *fname)
 	fread(&tbl->msize, sizeof(int), 1, tbl->fd);
 	tbl->arr = (Item*) calloc(tbl->msize, sizeof(Item));
 	fread(&tbl->csize, sizeof(int), 1, tbl->fd);
+	for (int i = 0; i < tbl->csize; i++)
+	{
+		fread((tbl->arr))
+	}
 	fread(tbl->arr, sizeof(Item), tbl->csize, tbl->fd);
 	return 0;
 }
@@ -177,18 +167,19 @@ int create(Table *tbl, char *fname, int sz)
 	return 0;
 }
 
-void print(Table *tbl, FILE *out)
+int print(Table *tbl)
 {
 	if (tbl->csize == 0)
-		fprintf(out, "Table is empty.\n");
+		printf("Table is empty.\n");
 	for (int i = 0; i < tbl->csize; i++)
 	{
 		fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
 		char *info = (char*) calloc((tbl->arr)[i].len, sizeof(char));
 		fread(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
-		fprintf(out, "par = %u, key = %u, info = %s\n", (tbl->arr)[i].par, (tbl->arr)[i].key, info);
+		printf("par = %u, key = %u, info = %s\n", (tbl->arr)[i].par, (tbl->arr)[i].key, info);
 		free(info);
 	}
+	return 1;
 }
 
 void free_table(Table *tbl)

@@ -157,7 +157,7 @@ int dlg_import(Table *tbl_curr)
 		tbl_curr->msize = size;
 		tbl_curr->arr = tbl.arr;
 	}
-	free(inp);
 	fclose(f);
+	free(inp);
 	return 1;
 }

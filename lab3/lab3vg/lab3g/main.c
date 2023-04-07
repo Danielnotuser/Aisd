@@ -9,9 +9,9 @@ int main()
 	if (dlg_load(&tbl) == 0)
 		return 1;
 	int var;
-	int n = 7;
-	const char *opts[] = {"0. Quit", "1. Add", "2. Find", "3. Delete", "4. Import from file", "5. Find kids", "6. Print"};
-	int (*fptr[])(Table*) = {NULL, dlg_add, dlg_find, dlg_delete, dlg_import, dlg_find_kids, dlg_print};
+	int n = 6;
+	const char *opts[] = {"0. Quit", "1. Add", "2. Find", "3. Delete", "4. Import from file", "5. Print"};
+	int (*fptr[])(Table*) = {NULL, dlg_add, dlg_find, dlg_delete, dlg_import, print};
 	while ((var = menu(opts, n)))
 	{
 		if (!fptr[var](&tbl))

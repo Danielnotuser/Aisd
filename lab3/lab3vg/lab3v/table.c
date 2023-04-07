@@ -6,18 +6,19 @@
 
 #define STEP 1
 
-unsigned int hash(unsigned int key, int p) 
+unsigned int hash(unsigned int key)
 {
-	return (key + p);
+	return key;
 }
 
 int find_rel(Table *tbl, unsigned int key) // Возможно использование find() вместо find_rel()?
 {
 	int rel = 0, h;
 	int M = tbl->msize;
+	int h_0 = hash(key);
 	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		h = hash(key, p) % M;
+		h = (h_0 + p) % M;
 		if ((tbl->arr)[h].busy == 0)
 			break;
 		if ((tbl->arr)[h].key == key)
@@ -35,9 +36,10 @@ int insert(Table *tbl, unsigned int key, char *info)
 	int busy = 1, rel = 0;
 	int M = tbl->msize;
 	Item a = {busy, rel, key, info_item};
+	int h_0 = hash(key);
 	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		h = hash(key, p) % M;
+		h = (h_0 + p) % M;
 		if ((tbl->arr)[h].busy != 1)
 		{
 			a.rel = find_rel(tbl, key);
@@ -51,17 +53,18 @@ int insert(Table *tbl, unsigned int key, char *info)
 
 int delete(Table *tbl, unsigned int key)
 {
-	int h;
+	int h, h_0;
 	int M = tbl->msize;
 	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		h = hash(key, p) % M;
+		h = (h_0 + p) % M;
 		if ((tbl->arr)[h].busy == 0)
 			return 1;
 		if ((tbl->arr)[h].busy == 1 && (tbl->arr)[h].key == key)
 		{
 			(tbl->arr)[h].busy = -1;
-			free((tbl->arr)[h].info);	
+			free((tbl->arr)[h].info);
+			(tbl->csize)--;	
 			return 0;
 		}
 	}
@@ -75,9 +78,10 @@ int find(Table *tbl, unsigned int key, Table *res)
 		return 2;
 	int h, len = 0;
 	int M = tbl->msize;
+	int h_0 = hash(key);
 	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		h = hash(key, p) % M;
+		h = (h_0 + p) % M;
 		if ((tbl->arr)[h].busy == 0)
 			break;
 		if ((tbl->arr)[h].busy == 1 && (tbl->arr)[h].key == key)
@@ -107,7 +111,7 @@ int print(Table *tbl)
 {
 	if (tbl->csize == 0)
 		printf("Table is empty.\n");
-	for (int i = 0; i < tbl->csize; i++)
+	for (int i = 0; i < tbl->msize; i++)
 	{
 		if ((tbl->arr)[i].busy == 1)
 			printf("busy = %d, rel = %d, key = %u, info = %s\n", (tbl->arr)[i].busy, (tbl->arr)[i].rel, (tbl->arr)[i].key, (tbl->arr)[i].info);

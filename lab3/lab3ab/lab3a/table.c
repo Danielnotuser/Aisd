@@ -45,7 +45,20 @@ int delete(Table *tbl, unsigned int key)
 	return 0;
 }
 
-int find(Table *tbl, unsigned int par, Item **res, int *len)
+int find(Table *tbl, unsigned int key, Item *a)
+{
+	for (int i = 0; i < tbl->csize; i++)
+	{
+		if ((tbl->arr)[i].key == key)
+		{
+			(*a) = (tbl->arr)[i];
+			return 0;
+		}
+	}
+	return 1;
+}
+
+int find_kids(Table *tbl, unsigned int par, Item **res, int *len)
 {
 	Item *childs = NULL;
 	int rsize = 0;
