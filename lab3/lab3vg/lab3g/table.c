@@ -5,132 +5,145 @@
 #include "menu.h"
 #include "table.h"
 
-int insert(Table *tbl, unsigned int key, unsigned int par, char *info)
+#define STEP 1
+
+unsigned int hash(unsigned int key)
+{
+	return key;	
+}
+
+int find_rel(Table *tbl, unsigned int key) // Возможно использование find() вместо find_rel()?
+{
+	int rel = 0, h;
+	int M = tbl->msize;
+	int h_0 = hash(key);
+	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
+	{
+		h = (h_0 + p) % M;
+		if ((tbl->arr)[h].busy == 0)
+			break;
+		if ((tbl->arr)[h].key == key)
+			rel = (tbl->arr)[h].rel + 1;
+	}	
+	return rel;
+}
+
+int insert(Table *tbl, unsigned int key, char *info)
 {
 	if (tbl->csize == tbl->msize)
-		return 3;
-	int p = 0;
-	for (int i = 0; i < tbl->csize; i++)
+		return 1;
+	unsigned int h, h0 = hash(key);
+	int M = tbl->msize;
+	int len = strlen(info) + 1;
+	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		if ((tbl->arr)[i].key == key)
-			return 1;
-		if ((tbl->arr)[i].key == par)
-			p = 1;
+		h = (h0 + p) % M;
+		if ((tbl->arr)[h].busy != 1)
+		{
+			(tbl->arr)[h].busy = 1;
+			(tbl->arr)[h].rel = find_rel(tbl, key);
+			(tbl->arr)[h].key = key;
+			(tbl->arr)[h].len = len;
+			for (unsigned int i = tbl->msize - 1; i > h; i--)
+			{
+				int offset = (tbl->arr)[i].offset;
+				(tbl->arr)[i].offset += len - 1;
+				if ((tbl->arr)[i].busy == 1)
+				{
+					fseek(tbl->fd, offset, SEEK_SET);
+					char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
+					if (!info_i) return 2;
+					fread(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+					fseek(tbl->fd, offset + len - 1, SEEK_SET);
+					fwrite(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);	
+					free(info_i);
+				}
+				
+			}
+			fseek(tbl->fd, (tbl->arr)[h].offset, SEEK_SET);
+			fwrite(info, sizeof(char), (tbl->arr)[h].len, tbl->fd);
+			break;
+		}
 	}
-	if ((tbl->csize == 0 && par != 0) || (!p && par != 0))
-		return 2;
-	fseek(tbl->fd, 0, SEEK_END);
-	int offset = ftell(tbl->fd);
-	Item a = {key, par, offset, strlen(info) + 1};
-	(tbl->arr)[tbl->csize] = a;
-	fwrite(info, sizeof(char), a.len, tbl->fd); 
 	(tbl->csize)++; 
 	return 0;
 }
 
-int file_len(Table *tbl)
-{
-	int len = 2 * sizeof(int) + tbl->msize * sizeof(Item);
-	for (int i = 0; i < tbl->csize; i++)
-		len += tbl->arr[i].len * sizeof(char);
-	return len;	
-}
 
 int delete(Table *tbl, unsigned int key)
 {
-	int k = -1;
-	for (int i = 0; i < tbl->csize; i++)
-	{
-		if ((tbl->arr)[i].par == key)
-			return 1;
-		if ((tbl->arr)[i].key == key)
-			k = i;
-	}
-	if (k == -1)
-		return 2;
-	int file_length = file_len(tbl);
-	if (k == tbl->csize - 1)
-	{
-		int fd = fileno(tbl->fd);
-		ftruncate(fd, file_length - (tbl->arr)[k].len);
-		Item b = {0, 0, 0, 0};
-		(tbl->arr)[k] = b;
-		tbl->csize -= 1;
-		return 0;
-	}
-	fseek(tbl->fd, (tbl->arr)[tbl->csize-1].offset, SEEK_SET);
-	char *info = (char*) calloc((tbl->arr)[tbl->csize-1].len, sizeof(char));
-	fread(info, sizeof(char), (tbl->arr)[tbl->csize-1].len, tbl->fd);
-	Item last = (tbl->arr)[tbl->csize-1];
-	int len_curr = (tbl->arr)[k].len;
-	if (last.len > len_curr)
-	{
-		int chng = last.len - len_curr;
-		for (int i = tbl->csize-2; i > k; i--)
-		{
-			char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
-			fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
-			fread(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);
-			fseek(tbl->fd, (tbl->arr)[i].offset + chng, SEEK_SET);
-			(tbl->arr)[i].offset = ftell(tbl->fd);
-			fwrite(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
-		}
-	}
+	unsigned int h, h_0 = hash(key);
+	int M = tbl->msize, len, file_length;
+	if ((tbl->arr)[tbl->msize - 1].busy == 1)
+		file_length = (tbl->arr)[tbl->msize - 1].offset + (tbl->arr)[tbl->msize - 1].len;
 	else 
+		file_length = (tbl->arr)[tbl->msize - 1].offset + 1;
+	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		int offset = (tbl->arr)[k].offset;
-		(tbl->arr)[k] = last;
-		(tbl->arr)[k].offset = offset;
-		fseek(tbl->fd, (tbl->arr)[k].offset, SEEK_SET);
-		fwrite(info, sizeof(char), (tbl->arr)[k].len, tbl->fd);
-		if (last.len < len_curr)
+		h = (h_0 + p) % M;
+		if ((tbl->arr)[h].busy == 0)
+			return 1;
+		if ((tbl->arr)[h].busy == 1 && (tbl->arr)[h].key == key)
 		{
-			int chng = len_curr - last.len;
-			for (int i = k + 1; i < tbl->csize - 2; i++)
+			(tbl->arr)[h].busy = -1;
+			len = (tbl->arr)[h].len;
+			for (int i = h + 1; i < tbl->msize; i++)
 			{
-				char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
-				fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
-				fread(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);
-				fseek(tbl->fd, (tbl->arr)[i].offset - chng, SEEK_SET);
-				(tbl->arr)[i].offset = ftell(tbl->fd);
-				fwrite(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
-			}		
+				int offset = (tbl->arr)[i].offset;
+				(tbl->arr)[i].offset -= (len - 1);
+				if ((tbl->arr)[i].busy == 1)
+				{
+					fseek(tbl->fd, offset, SEEK_SET);
+					char *info_i = (char*) calloc((tbl->arr)[i].len, sizeof(char));
+					if (!info_i) return 2;
+					fread(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+					fseek(tbl->fd, offset - len + 1, SEEK_SET);
+					fwrite(info_i, sizeof(char), (tbl->arr)[i].len, tbl->fd);	
+					free(info_i);
+				}		
+			}
+			break;
 		}
 	}
 	int fd = fileno(tbl->fd);
 	fflush(tbl->fd);
-	ftruncate(fd, file_length - (len_curr * sizeof(char)));
-	Item b = {0, 0, 0, 0};
-	(tbl->arr)[tbl->csize-1] = b;
-	tbl->csize -= 1;
-	free(info);
+	ftruncate(fd, file_length - (len * sizeof(char)));
+	(tbl->csize)--;
 	return 0;
 }
 
-int find(Table *tbl, unsigned int par, Item **res, int *len)
+int find(Table *tbl, unsigned int key, Table *res)
 {
-	Item *childs = NULL;
-	int rsize = 0;
-	for (int i = 0; i < tbl->csize; i++)
+	Item *rels = (Item*) calloc(tbl->msize, sizeof(Item));
+	Table r;
+	if (!rels)
+		return 2;
+	int h, len = 0;
+	int M = tbl->msize;
+	int h_0 = hash(key);
+	for (int n = 0, p = 0; n < tbl->msize; n++, p += STEP)
 	{
-		if ((tbl->arr)[i].par == par)
+		h = (h_0 + p) % M;
+		if ((tbl->arr)[h].busy == 0)
+			break;
+		if ((tbl->arr)[h].busy == 1 && (tbl->arr)[h].key == key)
 		{
-			childs = (Item*) realloc(childs, sizeof(Item) * (rsize + 1));
-			if (!childs)
-				return 2;
-			Item new;
-			new.key = (tbl->arr)[i].key;
-			new.par = par;
-			new.offset = (tbl->arr)[i].offset;
-			new.len = (tbl->arr)[i].len;
-			childs[rsize] = new;
-			rsize++;
+			Item a = {(tbl->arr)[h].busy, (tbl->arr)[h].rel, (tbl->arr)[h].key, (tbl->arr)[h].offset, (tbl->arr)[h].len};
+			rels[len] = a;
+			len++;
 		}
 	}
-	if (rsize == 0)
+	rels = (Item*) realloc(rels, len * sizeof(Item));
+	if (len == 0)
+	{
+		res = NULL;
 		return 1;
-	(*res) = childs;
-	(*len) = rsize;
+	}
+	r.csize = len;
+	r.msize = len;
+	r.arr = rels;
+	r.fd = tbl->fd;
+	(*res) = r;
 	return 0;
 }
 
@@ -142,11 +155,7 @@ int load(Table *tbl, char *fname)
 	fread(&tbl->msize, sizeof(int), 1, tbl->fd);
 	tbl->arr = (Item*) calloc(tbl->msize, sizeof(Item));
 	fread(&tbl->csize, sizeof(int), 1, tbl->fd);
-	for (int i = 0; i < tbl->csize; i++)
-	{
-		fread((tbl->arr))
-	}
-	fread(tbl->arr, sizeof(Item), tbl->csize, tbl->fd);
+	fread(tbl->arr, sizeof(Item), tbl->msize, tbl->fd);
 	return 0;
 }
 
@@ -154,7 +163,8 @@ int create(Table *tbl, char *fname, int sz)
 {
 	tbl->msize = sz;
 	tbl->csize = 0;
-	tbl->fd = fopen(fname, "w+b");
+	if (fname) 
+		tbl->fd = fopen(fname, "w+b");
 	if (!tbl->fd)
 	{
 		tbl->arr = NULL;
@@ -164,6 +174,13 @@ int create(Table *tbl, char *fname, int sz)
 	fwrite(&(tbl->msize), sizeof(int), 1, tbl->fd);
 	fwrite(&(tbl->csize), sizeof(int), 1, tbl->fd);
 	fwrite(tbl->arr, sizeof(Item), tbl->msize, tbl->fd);
+	(tbl->arr)[0].offset = ftell(tbl->fd); 
+	(tbl->arr)[0].busy = 0;
+	for (int i = 1; i < tbl->msize; i++)
+	{
+		(tbl->arr)[i].busy = 0;
+		(tbl->arr)[i].offset = (tbl->arr)[i - 1].offset + 1;
+	}
 	return 0;
 }
 
@@ -171,19 +188,22 @@ int print(Table *tbl)
 {
 	if (tbl->csize == 0)
 		printf("Table is empty.\n");
-	for (int i = 0; i < tbl->csize; i++)
+	for (int i = 0; i < tbl->msize; i++)
 	{
-		fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
-		char *info = (char*) calloc((tbl->arr)[i].len, sizeof(char));
-		fread(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
-		printf("par = %u, key = %u, info = %s\n", (tbl->arr)[i].par, (tbl->arr)[i].key, info);
-		free(info);
+		if ((tbl->arr)[i].busy == 1)
+		{
+			fseek(tbl->fd, (tbl->arr)[i].offset, SEEK_SET);
+			char *info = (char*) calloc((tbl->arr)[i].len, sizeof(char));
+			fread(info, sizeof(char), (tbl->arr)[i].len, tbl->fd);
+			printf("busy = %d, rel = %d, key = %u, info = %s\n", (tbl->arr)[i].busy, (tbl->arr)[i].rel, (tbl->arr)[i].key, info);
+			free(info);	
+		}
 	}
 	return 1;
 }
 
 void free_table(Table *tbl)
 {
-	if (tbl->arr)
+	if (tbl)
 		free(tbl->arr);
 }

@@ -19,9 +19,9 @@ typedef struct Table {
 } Table;
 
 
-int insert(Table*, unsigned int, unsigned int, char*);
+int insert(Table*, unsigned int, char*);
 int delete(Table*, unsigned int);
-int find(Table*, unsigned int, Item**, int*);
+int find(Table*, unsigned int, Table*);
 int load(Table*, char*);
 int create(Table*, char*, int);
 void free_table(Table*);

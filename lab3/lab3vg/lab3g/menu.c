@@ -18,10 +18,11 @@ int dlg_load(Table* tbl)
 		return 0;
 	}
 	fname = (char*) realloc(fname, (strlen(fname)+1) * sizeof(char));
-	if (strcmp(strrchr(fname, '.'), ".bin"))
+	if (strlen(fname) < 5 || strcmp(strrchr(fname, '.'), ".bin"))
 	{
-		printf("Error! Wrong file name.");
-		return 1;
+		printf("Error! Wrong file name.\n");
+		free(fname);
+		return 0;
 	}
 	if (load(tbl, fname))
 	{
@@ -44,7 +45,7 @@ int menu(const char *opts[], int n)
 	int i, err;
 	do
 	{
-		if (var >= n) printf("Error! Number must be in range of options. Try again...");
+		if (var >= n) printf("Error! Number must be in range of options. Try again...\n");
 		for (i = 0; i < n; i++)
 			printf("%s\n", opts[i]);
 		printf("Choose the option: ");
@@ -58,21 +59,12 @@ int menu(const char *opts[], int n)
 
 int dlg_add(Table* tbl)
 {
-	const char *errmsgs[] = {"Item added.", "Duplicate key.", 
-							"Parent key doesn't exist.", "Table overflow.", 
+	const char *errmsgs[] = {"Item added.", "Table overflow.", 
 							"Memory allocation error."};
 	int inp;
-	unsigned int key, par;
-	printf("Enter parent key: ");
-	int err = read_nat(&inp);
-	if (err)
-	{
-		printf("\nInput has been interrupted.\n");
-		return 0;
-	}
-	par = inp;
+	unsigned int key;
 	printf("Enter key: ");
-	err = read_nat(&inp);
+	int err = read_nat(&inp);
 	if (err)
 	{
 		printf("\nInput has been interrupted.\n");
@@ -88,7 +80,7 @@ int dlg_add(Table* tbl)
 		return 0;
 	}
 	info = (char*) realloc(info, strlen(info) + 1);
-	err = insert(tbl, key, par, info);
+	err = insert(tbl, key, info);
 	if (err) 
 		printf("Error! ");
 	printf("%s\n", errmsgs[err]);
@@ -98,10 +90,10 @@ int dlg_add(Table* tbl)
 
 int dlg_find(Table *tbl)
 {
-	const char *errmsgs[] = {"Ok", "This item is not a parent key.", 
+	const char *errmsgs[] = {"Ok.", "There is no item with this key.", 
 							"Memory allocation error."};
 	int inp;
-	unsigned int par;
+	unsigned int key;
 	printf("Enter key: ");
 	int err = read_nat(&inp);
 	if (err)
@@ -109,22 +101,14 @@ int dlg_find(Table *tbl)
 		printf("\nInput has been interrupted.\n");
 		return 0;
 	}
-	par = inp;
-	Item *res = NULL;
-	int len = 0;
-	err = find(tbl, par, &res, &len);
+	key = inp;
+	Table res;
+	err = find(tbl, key, &res);
 	if (!err)
 	{
-		printf("Found table:\n");
-		for (int i = 0; i < len; i++)
-		{
-			fseek(tbl->fd, res[i].offset, SEEK_SET);
-			char *info = (char*) calloc((tbl->arr)[i].len, sizeof(char));
-			fread(info, sizeof(char), res[i].len, tbl->fd);
-			printf("par = %u, key = %u, info = %s\n", res[i].par, res[i].key, info);
-			free(info);
-		}
-		if (res) free(res);
+		printf("Found releases of that key:\n");
+		print(&res);
+		free_table(&res);
 	}
 	else
 		printf("Error! %s\n", errmsgs[err]);
@@ -133,8 +117,7 @@ int dlg_find(Table *tbl)
 
 int dlg_delete(Table *tbl)
 {
-	const char *errmsgs[] = {"Item removed.", "This item is a parent key.",
-							"There is no item with this key."};
+	const char *errmsgs[] = {"Item removed.", "There is no item with this key."};
 	int inp;
 	unsigned int key;
 	printf("Enter key: ");
@@ -154,52 +137,44 @@ int dlg_delete(Table *tbl)
 
 int dlg_import(Table *tbl_curr)
 {
-	char *inp = (char*) calloc(40, sizeof(char));
+	char *fname;
 	printf("Enter file name: ");
-	scanf("%s", inp);
-	inp = (char*) realloc(inp, strlen(inp) + 1);
-	if (strcmp(strrchr(inp, '.'), ".txt"))
+	int err = read_str(&fname);
+	if (err)
+	{
+		printf("Error! Memory allocation error.\n");
+		return 1;
+	}
+	fname = (char*) realloc(fname, strlen(fname) + 1);
+	if (strcmp(strrchr(fname, '.'), ".txt"))
 	{
 		printf("Error! Wrong file name.\n");
-		return 1;
+		return 2;
 	}
-	FILE *f = fopen(inp, "r");
+	FILE *f = fopen(fname, "r");
 	if (f == NULL)
 	{
-		printf("Error! Can't open file \"%s\"", inp);
-		return 1;
+		printf("Error! Can't open file \"%s\"", fname);
+		return 3;
 	}
 	int size;
-	unsigned int par, key;
-	int err = fscanf(f, "%d%*c", &size);
+	unsigned int key;
+	err = fscanf(f, "%d%*c", &size);
 	if (err == 1)
 	{
 		char *info;
 		int pos, add_err, i = 0;
 		Table tbl;
-		tbl.msize = size;
-		tbl.arr = (Item*) calloc(size, sizeof(Item));
-		tbl.csize = 0;
 		tbl.fd = tbl_curr->fd;
 		int fd = fileno(tbl.fd);
 		fflush(tbl.fd);
 		ftruncate(fd, 0);
-		if (!tbl.fd) printf("error\n");
-		fseek(tbl.fd, 0, SEEK_SET);
-		fwrite(&(tbl.msize), sizeof(int), 1, tbl.fd);
-		fseek(tbl.fd, sizeof(int), SEEK_SET);
-		fwrite(&(tbl.csize), sizeof(int), 1, tbl.fd);
-		fseek(tbl.fd, sizeof(int) * 2, SEEK_SET);
-		fwrite(tbl.arr, sizeof(Item), size, tbl.fd);
+		err = create(&tbl, NULL, size);
+		if (err)
+			return 1;
 		do
 		{
-			err = fscanf(f, "%u%*c", &par);
-			if (err != 1)
-			{
-				fscanf(f, "%*[^\n]%*c");
-				continue;
-			}
-			err = fscanf(f, "%u%*c%*c", &key);
+			err = fscanf(f, "%u%*c", &key);
 			if (err != 1)
 			{
 				fscanf(f, "%*[^\n]%*c");
@@ -211,7 +186,7 @@ int dlg_import(Table *tbl_curr)
 			pos = ftell(f) - pos;
 			info[pos] = '\0';
 			info = (char*) realloc(info, (pos + 1) * sizeof(char));
-			add_err = insert(&tbl, key, par, info);	
+			add_err = insert(&tbl, key, info);	
 			free(info);
 			if (!add_err) i++;
 			
@@ -221,7 +196,7 @@ int dlg_import(Table *tbl_curr)
 		tbl_curr->msize = size;
 		tbl_curr->arr = tbl.arr;
 	}
-	free(inp);
+	free(fname);
 	fclose(f);
 	return 1;
 }
@@ -230,10 +205,8 @@ int dlg_save(Table* tbl)
 {
 	fseek(tbl->fd, 0, SEEK_SET);
 	fwrite(&(tbl->msize), sizeof(int), 1, tbl->fd);
-	fseek(tbl->fd, sizeof(int), SEEK_SET);
 	fwrite(&(tbl->csize), sizeof(int), 1, tbl->fd);
-	fseek(tbl->fd, sizeof(int) * 2, SEEK_SET);
-	fwrite(tbl->arr, sizeof(Item), tbl->csize, tbl->fd);
+	fwrite(tbl->arr, sizeof(Item), tbl->msize, tbl->fd);
 	fclose(tbl->fd);
 	tbl->fd = NULL;
 	return 1;
