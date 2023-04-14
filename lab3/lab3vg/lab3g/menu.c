@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include "menu.h"
 #include "table.h"
@@ -24,7 +25,8 @@ int dlg_load(Table* tbl)
 		free(fname);
 		return 0;
 	}
-	if (load(tbl, fname))
+	err = load(tbl, fname);
+	if (err == ENOENT)
 	{
 		printf("Enter size of table: ");
 		err = read_nat(&sz);
@@ -33,7 +35,19 @@ int dlg_load(Table* tbl)
 			free(fname);
 			return 0;
 		}
-		create(tbl, fname, sz);
+		err = create(tbl, fname, sz);
+		if (err) 
+		{
+			perror("Error! ");
+			free(fname);
+			return 0;
+		}
+	}
+	else if (err != 0)
+	{
+		perror("Error! ");
+		free(fname);
+		return 0;
 	}
 	free(fname);
 	return 1;

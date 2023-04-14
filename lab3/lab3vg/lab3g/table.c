@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include "menu.h"
 #include "table.h"
@@ -151,7 +152,7 @@ int load(Table *tbl, char *fname)
 {
 	tbl->fd = fopen(fname, "r+b");
 	if (tbl->fd == NULL)
-		return 1;
+		return errno;
 	fread(&tbl->msize, sizeof(int), 1, tbl->fd);
 	tbl->arr = (Item*) calloc(tbl->msize, sizeof(Item));
 	fread(&tbl->csize, sizeof(int), 1, tbl->fd);
@@ -168,7 +169,7 @@ int create(Table *tbl, char *fname, int sz)
 	if (!tbl->fd)
 	{
 		tbl->arr = NULL;
-		return 1;
+		return errno;
 	}	
 	tbl->arr = (Item*) calloc(tbl->msize, sizeof(Item));
 	fwrite(&(tbl->msize), sizeof(int), 1, tbl->fd);
