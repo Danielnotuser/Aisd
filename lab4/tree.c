@@ -5,6 +5,8 @@
 
 static void free_node(Node *rt)
 {
+	rt->par = NULL;
+	rt->next = NULL;
 	for (int i = 0; i < rt->info.n; i++)
 		free(rt->info.arr[i]);
 	free(rt->info.arr);
@@ -101,19 +103,16 @@ static void shift_arr(Item *a, int num)
 int delete(Tree *tree, char *key, int num)
 {
 	Node *rt = tree->root;
-	Node *rt_prev = NULL;
 	int cmp, rpar;
 	while ((cmp = strcmp(key, rt->key)))
 	{
 		if (cmp > 0 && rt->right)
 		{
-			rt_prev = rt;
 			rpar = 1;
 			rt = rt->right;
 		}
 		else if (cmp < 0 && rt->left)
 		{
-			rt_prev = rt;
 			rpar = 0;
 			rt = rt->left;
 		}	
@@ -133,56 +132,83 @@ int delete(Tree *tree, char *key, int num)
 		for (int i = 0; i < new->info.n; i++) new->info.arr[i] = strdup(fnd->info.arr[i]);
 		new->left = rt->left;
 		new->right = rt->right;
-		if (!rt_prev)
-			tree->root = new;
-		else if (rpar)
-			rt_prev->right = new;
-		else
-			rt_prev->left = new;
+		if (new->left) new->left->par = new;
+		if (new->right) new->right->par = new;
+		new->par = rt->par;
+		Node *rt_par = rt->par;
 		if (rt->info.n > 1)
 			shift_arr(&(rt->info), num);
 		else
-			free_node(rt);
-		if (par)
 		{
-			rt_prev = par;
-			rpar = 0;	
+			free_node(rt);
+			if (!rt_par)
+				tree->root = new;
+			else if (rpar)
+				rt_par->right = new;
+			else
+				rt_par->left = new;
 		}
+		if (par)
+			rpar = 0;	
 		else
 		{
-			rt_prev = new;
+			fnd->par = new;
 			rpar = 1;	
 		}
 		rt = fnd;
 	}
 	if (!rt->left && !rt->right)
 	{
-		if (!rt_prev) 
+		if (!rt->par) 
 			tree->root = NULL;
-		else if (rpar) 
-			rt_prev->right = NULL;
+		else if (rpar)
+			rt->par->right = NULL;
 		else
-			rt_prev->left = NULL;
+			rt->par->left = NULL;
 	}
 	else if ((rt->left && !rt->right) || (!rt->left && rt->right))
 	{
-		if (rt->left)
+		if (!rt->par)
 		{
-			if (!rt_prev)
+			if (rt->left) 
+			{
 				tree->root = rt->left;
-			else if (rpar)
-				rt_prev->right = rt->left;
-			else
-				rt_prev->left = rt->left;
-		}
-		else
-		{
-			if (!rt_prev)
+				rt->left->par = tree->root;
+			}
+			else 
+			{
 				tree->root = rt->right;
-			if (rpar)
-				rt_prev->right = rt->right;
+				rt->right->par = tree->root;
+			}
+		}
+		else if (rpar)
+		{
+			if (rt->left)
+			{
+				if (rpar)
+				{
+					rt->par->right = rt->left;
+					rt->left->par = rt->par;
+				}
+				else
+				{
+					rt->par->left = rt->left;
+					rt->left->par = rt->par;	
+				}
+			}
 			else
-				rt_prev->left = rt->right;
+			{
+				if (rpar)
+				{
+					rt->par->right = rt->right;
+					rt->right->par = rt->par;
+				}
+				else
+				{
+					rt->par->left = rt->right;
+					rt->right->par = rt->par;	
+				}	
+			}
 		}
 	}
 	if (rt->info.n > 1)
@@ -246,6 +272,7 @@ void thread(Tree *tree)
 	Node *rt = tree->root;
 	while (1)
 	{
+		if (rt->next) rt->next = NULL;
 		if (rt->left || rt->right)
 		{
 			if (rt->left) rt = rt->left;
