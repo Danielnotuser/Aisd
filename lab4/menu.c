@@ -4,6 +4,7 @@
 
 #include "menu.h"
 #include "tree.h"
+#include "rand.h"
 
 int menu(const char *opts[], int num_opts)
 {
@@ -258,6 +259,28 @@ int dlg_show(Tree *tree)
 	system("dot -Tpng tree.dot -o tree.png");
 	system("gsettings set org.hnome.desktop.interface text-scaling factor 0.5");
 	system("catimg tree.png");
+	return 0;
+}
+
+int dlg_rand(int *opened)
+{
+	int num_node, num_tree;
+	printf("Enter number of nodes: ");
+	int err = read_nat(&num_node);
+	if (err)
+	{
+		printf("\nInput has been intrerrupted\n");
+		return 1;
+	}
+	printf("Enter number of trees: ");
+	err = read_nat(&num_tree);
+	if (err)
+	{
+		printf("\nInput has been intrerrupted\n");
+		return 1;
+	}
+	rand_tree(num_node, num_tree, *opened);
+	(*opened) = 1;
 	return 0;
 }
 
