@@ -25,10 +25,9 @@ int insert(Tree*, char*, char*);
 int delete(Tree*, char*, int);
 int find(Tree*, char*, int, Node**);
 int special_find(Tree*, char*, int, Node**);
-void thread(Tree*);
 void detour(Tree*);
 void print_node(FILE*, Node*);
 void show_recur(Node*, int, char);
-void free_recur(Node*);
+void free_recur(Node**);
 
 #endif

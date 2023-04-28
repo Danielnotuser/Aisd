@@ -172,6 +172,13 @@ int dlg_import(Tree *tree_old)
 		return 1;
 	}	
 	fname = (char*) realloc(fname, strlen(fname) + 1);
+	char *dot = strrchr(fname, '.');
+	if (!dot || strcmp(dot, ".txt"))
+	{
+		free(fname);
+		printf("Error! Wrong file name.\n");
+		return 0;
+	}
 	clock_t start = clock();
 	FILE *fd = fopen(fname, "r");
 	Tree tree;
@@ -224,7 +231,6 @@ int dlg_detour(Tree *tree)
 		printf("Tree is empty.\n");
 		return 0;
 	}
-	thread(tree);
 	clock_t start = clock();
 	detour(tree);
 	clock_t end = clock();
@@ -287,5 +293,5 @@ int dlg_rand(int *opened)
 void free_tree(Tree *tree)
 {
 	if (tree->root)
-		free_recur(tree->root);
+		free_recur(&tree->root);
 }

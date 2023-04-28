@@ -18,10 +18,10 @@ void rand_tree(int num_node, int num_tree, int opened)
 {
 	srand(time(NULL));
 	double avr_add_sum = 0, avr_del_sum = 0, avr_find_sum = 0;
+	Tree tree;
 	clock_t start, end;
 	for (int j = 0; j < num_tree; j++)
 	{
-		Tree tree;
 		tree.root = NULL;
 		double sum_tm = 0;
 		char **keys = (char**) calloc(num_node, sizeof(char*));
@@ -50,7 +50,7 @@ void rand_tree(int num_node, int num_tree, int opened)
 		end = clock();
 		sum_tm += (double) (end - start) / CLOCKS_PER_SEC;
 		avr_find_sum += sum_tm / num_node;
-		free_recur(tree.root);
+		free_recur(&tree.root);
 		for (int i = 0; i < num_node; i++)
 			free(keys[i]);
 		free(keys);
@@ -58,12 +58,13 @@ void rand_tree(int num_node, int num_tree, int opened)
 	FILE *fd;
 	if (opened) fd = fopen("rand_results.txt", "r+");
 	else fd = fopen("rand_results.txt", "w");
+	fseek(fd, 0, SEEK_END);
 	fprintf(fd, "num_node = %d, num_tree = %d\n", num_node, num_tree);
-	printf("Average time for add: %.6lf\n", avr_add_sum / num_tree);
-	fprintf(fd, "%.6lf\n", avr_add_sum / num_tree);
-	printf("Average time for delete: %.6lf\n", avr_del_sum / num_tree);
-	fprintf(fd, "%.6lf\n", avr_del_sum / num_tree);
-	printf("Average time for find: %.6lf\n", avr_find_sum / num_tree);
-	fprintf(fd, "%.6lf\n", avr_find_sum / num_tree);
+	printf("Average time for add: %.10lf\n", avr_add_sum / num_tree);
+	fprintf(fd, "%.10lf\n", avr_add_sum / num_tree);
+	printf("Average time for delete: %.10lf\n", avr_del_sum / num_tree);
+	fprintf(fd, "%.10lf\n", avr_del_sum / num_tree);
+	printf("Average time for find: %.10lf\n", avr_find_sum / num_tree);
+	fprintf(fd, "%.10lf\n", avr_find_sum / num_tree);
 	fclose(fd);
 }

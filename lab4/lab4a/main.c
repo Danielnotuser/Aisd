@@ -15,8 +15,11 @@ int main()
 									dlg_detour, dlg_show};
 	while ((var = menu(opts, num_opts)))
 	{
-		if (var == 8 && dlg_rand(&opened))
-			break;
+		if (var == 8)
+		{
+			if (dlg_rand(&opened)) break;
+			else continue;
+		}
 		else if (!var || fptr[var - 1](&tree))
 			break;
 	}

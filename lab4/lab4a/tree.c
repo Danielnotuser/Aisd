@@ -3,24 +3,60 @@
 
 #include "tree.h"
 
-static void free_node(Node *rt)
+static void free_node(Node **rt)
 {
-	rt->par = NULL;
-	rt->next = NULL;
-	for (int i = 0; i < rt->info.n; i++)
-		free(rt->info.arr[i]);
-	free(rt->info.arr);
-	free(rt->key);
-	free(rt);	
+	(*rt)->par = NULL;
+	(*rt)->next = NULL;
+	for (int i = 0; i < (*rt)->info.n; i++)
+		free((*rt)->info.arr[i]);
+	free((*rt)->info.arr);
+	free((*rt)->key);
+	free(*rt);	
 }
 
-void free_recur(Node *rt)
+void free_recur(Node **rt)
 {
-	Node *left = rt->left;
-	Node *right = rt->right;
+	Node *left = (*rt)->left;
+	Node *right = (*rt)->right;
 	free_node(rt);
-	if (left) free_recur(left);
-	if (right) free_recur(right);	
+	if (left) free_recur(&left);
+	if (right) free_recur(&right);	
+}
+
+static void thread(Node *elem)
+{
+	Node *rt = elem;
+	while (1)
+	{
+		if (rt->next) rt->next = NULL;
+		if (rt->left || rt->right)
+		{
+			if (rt->left) rt = rt->left;
+			else rt = rt->right;
+		}
+		else
+		{
+			Node *par = rt->par;
+			Node *par_prev = rt->par;
+			if (par->right == rt) par = par->par;
+			while (par)
+			{
+				if ((par->right) && (par->right != par_prev))
+				{
+					rt->next = par->right;
+					break;
+				}
+				else
+				{	
+					par_prev = par;
+					par = par->par;
+				}
+			}
+			if (!par)
+				break;
+			rt = rt->next;
+		}
+	}
 }
 
 int insert(Tree *tree, char *key, char *info)
@@ -68,10 +104,11 @@ int insert(Tree *tree, char *key, char *info)
 			new->info = info_list;
 			new->left = NULL;
 			new->right = NULL;	
-			new->par = rt;
-			new->next = NULL;		
+			new->par = rt;		
+			new->next = NULL;
 			if (cmp > 0) rt->right = new;
 			else rt->left = new;
+			thread(new->par);
 			return 0;
 		}
 		else if (cmp > 0)
@@ -98,11 +135,12 @@ static void shift_arr(Item *a, int num)
 	for (int i = num; i < a->n - 1; i++)
 		a->arr[i] = a->arr[i + 1]; 	
 	free(del);
+	a->n -= 1;
 }
 
 int delete(Tree *tree, char *key, int num)
 {
-	Node *rt = tree->root;
+	Node *rt = tree->root, *par = NULL, *new = NULL;
 	int cmp, rpar;
 	while ((cmp = strcmp(key, rt->key)))
 	{
@@ -121,100 +159,88 @@ int delete(Tree *tree, char *key, int num)
 	}
 	if (rt->info.n <= num)
 		return 2;
+	if (rt->info.n > 1)
+	{
+		shift_arr(&(rt->info), num);
+		return 0;
+	}
 	if (rt->left && rt->right)
 	{
 		Node *fnd, *par;
 		find_right_min(rt->right, &fnd, &par);
-		Node *new = (Node*) calloc(1, sizeof(Node));
-		new->key = strdup(fnd->key);
-		new->info.n = fnd->info.n;
-		new->info.arr = (char**) calloc(new->info.n, sizeof(char*));
-		for (int i = 0; i < new->info.n; i++) new->info.arr[i] = strdup(fnd->info.arr[i]);
-		new->left = rt->left;
-		new->right = rt->right;
-		if (new->left) new->left->par = new;
-		if (new->right) new->right->par = new;
-		new->par = rt->par;
-		Node *rt_par = rt->par;
-		if (rt->info.n > 1)
-			shift_arr(&(rt->info), num);
-		else
-		{
-			free_node(rt);
-			if (!rt_par)
-				tree->root = new;
-			else if (rpar)
-				rt_par->right = new;
-			else
-				rt_par->left = new;
-		}
+		free(rt->key);
+		rt->key = strdup(fnd->key);
+		for (int i = 0; i < rt->info.n; i++) free(rt->info.arr[i]);
+		free(rt->info.arr);
+		rt->info.n = fnd->info.n;
+		rt->info.arr = (char**) calloc(rt->info.n, sizeof(char*));
+		for (int i = 0; i < rt->info.n; i++) rt->info.arr[i] = strdup(fnd->info.arr[i]);
 		if (par)
 			rpar = 0;	
 		else
-		{
-			fnd->par = new;
-			rpar = 1;	
-		}
+			rpar = 1;
+		new = rt;	
 		rt = fnd;
 	}
 	if (!rt->left && !rt->right)
 	{
-		if (!rt->par) 
+		par = rt->par;
+		if (!par) 
 			tree->root = NULL;
 		else if (rpar)
-			rt->par->right = NULL;
+			par->right = NULL;
 		else
-			rt->par->left = NULL;
+			par->left = NULL;
 	}
 	else if ((rt->left && !rt->right) || (!rt->left && rt->right))
 	{
-		if (!rt->par)
+		par = rt->par;
+		if (!par)
 		{
 			if (rt->left) 
 			{
 				tree->root = rt->left;
-				rt->left->par = tree->root;
+				rt->left->par = NULL;
 			}
 			else 
 			{
 				tree->root = rt->right;
-				rt->right->par = tree->root;
+				rt->right->par = NULL;
 			}
 		}
-		else if (rpar)
+		else
 		{
 			if (rt->left)
 			{
 				if (rpar)
 				{
-					rt->par->right = rt->left;
-					rt->left->par = rt->par;
+					par->right = rt->left;
+					rt->left->par = par;
 				}
 				else
 				{
-					rt->par->left = rt->left;
-					rt->left->par = rt->par;	
+					par->left = rt->left;
+					rt->left->par = par;	
 				}
 			}
 			else
 			{
 				if (rpar)
 				{
-					rt->par->right = rt->right;
-					rt->right->par = rt->par;
+					par->right = rt->right;
+					rt->right->par = par;
 				}
 				else
 				{
-					rt->par->left = rt->right;
-					rt->right->par = rt->par;	
+					par->left = rt->right;
+					rt->right->par = par;	
 				}	
 			}
 		}
 	}
-	if (rt->info.n > 1)
-		shift_arr(&(rt->info), num);
-	else
-		free_node(rt);
+	free_node(&rt);
+	if (new) thread(new);
+	else if (par) thread(par);
 	return 0;
 }
 
@@ -267,43 +293,6 @@ int special_find(Tree *tree, char *key, int num, Node **fnd)
 	return 0;
 }
 
-void thread(Tree *tree)
-{
-	Node *rt = tree->root;
-	while (1)
-	{
-		if (rt->next) rt->next = NULL;
-		if (rt->left || rt->right)
-		{
-			if (rt->left) rt = rt->left;
-			else rt = rt->right;
-		}
-		else
-		{
-			Node *par = rt->par;
-			Node *par_prev = rt->par;
-			if (par->right == rt) par = par->par;
-			while (par)
-			{
-				if ((par->right) && (par->right != par_prev))
-				{
-					rt->next = par->right;
-					break;
-				}
-				else
-				{	
-					par_prev = par;
-					par = par->par;
-				}
-			}
-			if (!par) 
-				break;
-			rt = rt->next;
-		}
-		
-	}
-}
-
 void detour(Tree *tree)
 {
 	Node *rt = tree->root;
@@ -340,12 +329,21 @@ void detour(Tree *tree)
 
 void print_node(FILE *fd, Node *rt)
 {
-	Node *left = rt->left, *right = rt->right;
-	if (left && right) fprintf(fd, "{ rank = same; \"%s\"; \"%s\"; }\n", left->key, right->key);
-	if (left) fprintf(fd, "\"%s\"->\"%s\";\n", rt->key, left->key);
-	if (right) fprintf(fd, "\"%s\"->\"%s\";\n", rt->key, right->key);
-	if (left) print_node(fd, left);
-	if (right) print_node(fd, right);
-
+	while (1)
+	{
+		if (rt->left && rt->right) fprintf(fd, "{ rank = same; \"%s\"; \"%s\"; }\n", rt->left->key, rt->right->key);
+		if (rt->left) fprintf(fd, "\"%s\"->\"%s\";\n", rt->key, rt->left->key);
+		if (rt->right) fprintf(fd, "\"%s\"->\"%s\";\n", rt->key, rt->right->key);
+		if (rt->left || rt->right)
+		{
+			if (rt->left) rt = rt->left;
+			else rt = rt->right;
+		}
+		else
+		{
+			if (!rt->next) break;
+			rt = rt->next;
+		}
+	}
 }
 

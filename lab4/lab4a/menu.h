@@ -14,7 +14,7 @@ int dlg_special_find(Tree*);
 int dlg_import(Tree*);
 int dlg_detour(Tree*);
 int dlg_show(Tree*);
-int dlg_rand();
+int dlg_rand(int*);
 void free_tree(Tree*);
 
 
