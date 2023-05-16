@@ -38,15 +38,16 @@ void rand_tree(int num_node, int num_tree, int opened)
 		}		
 		avr_add_sum += sum_tm / num_node;
 		int del_ind = rand() % num_node;
+		Item del;
 		start = clock();
-		delete(&tree, keys[del_ind], 0);
+		delete(&tree, tree.root, keys[del_ind], &del);
 		end = clock();
 		sum_tm += (double) (end - start) / CLOCKS_PER_SEC;
 		avr_del_sum += sum_tm / num_node;
-		Node *fnd;
+		Item fnd;
 		int find_ind = rand() % num_node;
 		start = clock();
-		find(&tree, keys[find_ind], 0, &fnd);
+		find(tree.root, keys[find_ind], &fnd);
 		end = clock();
 		sum_tm += (double) (end - start) / CLOCKS_PER_SEC;
 		avr_find_sum += sum_tm / num_node;

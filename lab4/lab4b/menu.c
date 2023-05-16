@@ -40,18 +40,16 @@ int dlg_add(Tree* tree)
 	err = read_str(&info);
 	if (err) 
 	{
+		free(key);
 		printf("\nInput has been interrupted.\n");
 		return 1;
 	}
 	key = (char*) realloc(key, strlen(key) + 1);
 	info = (char*) realloc(info, strlen(info) + 1);
-	clock_t start = clock();
 	err = insert(tree, key, info);
-	clock_t end = clock();
 	if (err) 
 		printf("Error! ");
 	printf("%s\n", errmsgs[err]);
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
 	free(info);
 	free(key);
 	return 0;	
@@ -59,7 +57,7 @@ int dlg_add(Tree* tree)
 
 int dlg_delete(Tree *tree)
 {
-	char *errmsgs[] = {"Node deleted.", "There is no such key.", "There is no such serial number."};
+	char *errmsgs[] = {"Node deleted.", "There is no such key."};
 	char *key;
 	printf("Enter key: ");
 	int err = read_str(&key);
@@ -69,28 +67,21 @@ int dlg_delete(Tree *tree)
 		return 1;
 	}
 	key = (char*) realloc(key, strlen(key) + 1);
-	int num;
-	printf("Enter serial number of key: ");
-	err = read_nat(&num);
-	if (err) 
-	{
-		printf("\nInput has been interrupted.\n");
-		return 1;
-	} 
-	clock_t start = clock();
-	err = delete(tree, key, num);
-	clock_t end = clock();
+	Item del;
+	err = delete(tree, tree->root, key, &del);
 	if (err) 
 		printf("Error! ");
 	printf("%s\n", errmsgs[err]);
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
+	if (!err)
+		printf("key = %s, info = %s\n", del.key, del.info);
+	free_item(&del);
 	free(key);	
 	return 0;
 }
 
 int dlg_find(Tree *tree)
 {
-	char *errmsgs[] = {"Node found.", "There is no such key.", "There is no such serial number."};
+	char *errmsgs[] = {"Node found.", "There is no such key."};
 	char *key;
 	printf("Enter key: ");
 	int err = read_str(&key);
@@ -100,33 +91,20 @@ int dlg_find(Tree *tree)
 		return 1;
 	}
 	key = (char*) realloc(key, strlen(key) + 1);
-	int num;
-	printf("Enter serial number of key: ");
-	err = read_nat(&num);
-	if (err) 
-	{
-		printf("\nInput has been interrupted.\n");
-		return 1;
-	}
-	Node *fnd;
-	clock_t start = clock();
-	err = find(tree, key, num, &fnd);
-	clock_t end = clock();
+	Item fnd;
+	err = find(tree->root, key, &fnd);
 	if (err) 
 		printf("Error! ");
 	printf("%s\n", errmsgs[err]);
 	if (!err)
-	{
-		printf("key = %s, info = %s\n", key, fnd->info.arr[num]);
-	}
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
+		printf("key = %s, info = %s\n", key, fnd.info);
 	free(key);
 	return 0;	
 }
 
 int dlg_special_find(Tree *tree)
 {
-	char *errmsgs[] = {"Node found.", "There is no such node.", "There is no such serial number."};
+	char *errmsgs[] = {"Node found.", "There is no such key."};
 	char *key;
 	printf("Enter key: ");
 	int err = read_str(&key);
@@ -136,26 +114,13 @@ int dlg_special_find(Tree *tree)
 		return 1;
 	}
 	key = (char*) realloc(key, strlen(key) + 1);
-	int num;
-	printf("Enter serial number of key: ");
-	err = read_nat(&num);
-	if (err) 
-	{
-		printf("\nInput has been interrupted.\n");
-		return 1;
-	}
-	Node *fnd;
-	clock_t start = clock();
-	err = special_find(tree, key, num, &fnd);
-	clock_t end = clock();
+	Item fnd;
+	err = special_find(tree->root, key, &fnd);
 	if (err) 
 		printf("Error! ");
 	printf("%s\n", errmsgs[err]);
 	if (!err)
-	{
-		printf("key = %s, info = %s\n", fnd->key, fnd->info.arr[num]);
-	}
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
+		printf("key = %s, info = %s\n", fnd.key, fnd.info);
 	free(key);
 	return 0;	
 }
@@ -179,7 +144,6 @@ int dlg_import(Tree *tree_old)
 		printf("Error! Wrong file name.\n");
 		return 0;
 	}
-	clock_t start = clock();
 	FILE *fd = fopen(fname, "r");
 	Tree tree;
 	tree.root = NULL;
@@ -219,8 +183,6 @@ int dlg_import(Tree *tree_old)
 	free(fname);
 	free_tree(tree_old);
 	(*tree_old) = tree;
-	clock_t end = clock();
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
 	return 0;
 }
 
@@ -231,24 +193,10 @@ int dlg_detour(Tree *tree)
 		printf("Tree is empty.\n");
 		return 0;
 	}
-	clock_t start = clock();
-	detour(tree);
-	clock_t end = clock();
+	detour(tree->root);
 	printf("\n");
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
 	return 0; 	
 }
-
-/*int dlg_show(Tree *tree)
-{
-	if (!tree->root)
-		printf("Tree is empty.\n");
-	clock_t start = clock();
-	show_recur(tree->root, 0, 'r');
-	clock_t end = clock();
-	printf("Process completed in %.5lf sec.\n", (double) (end - start) / CLOCKS_PER_SEC);
-	return 0;
-}*/
 
 int dlg_show(Tree *tree)
 {
@@ -263,10 +211,10 @@ int dlg_show(Tree *tree)
 	fprintf(fd, "}");
 	fclose(fd);
 	system("dot -Tpng tree.dot -o tree.png");
-	system("gsettings set org.hnome.desktop.interface text-scaling factor 0.5");
 	system("catimg tree.png");
 	return 0;
 }
+
 
 int dlg_rand(int *opened)
 {

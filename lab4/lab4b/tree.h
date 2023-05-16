@@ -3,11 +3,16 @@
 
 #include <stdio.h>
 
+typedef struct Item {
+	char *key;
+	char *info;
+} Item;
+
 typedef struct Node {
-	int n;
-	char *keys[3];
-	char *info[3];
+	int num_i, num_p;
+	Item items[3];
 	struct Node *ptr[4];
+	struct Node *par;
 } Node;
 
 typedef struct Tree {
@@ -15,12 +20,13 @@ typedef struct Tree {
 } Tree;
 
 int insert(Tree*, char*, char*);
-int delete(Tree*, char*, int);
-int find(Tree*, char*, int, Node**);
-int special_find(Tree*, char*, int, Node**);
-void detour(Tree*);
+int delete(Tree*, Node*, char*, Item*);
+int find(Node*, char*, Item*);
+int special_find(Node*, char*, Item*);
+void detour(Node*);
 void print_node(FILE*, Node*);
 void show_recur(Node*, int, char);
 void free_recur(Node**);
+void free_item(Item*);
 
 #endif
