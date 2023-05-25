@@ -1,0 +1,17 @@
+digraph Net_graph {
+rankdir=LR;
+edge[dir=none];
+"a";
+"a"->"b"[label="3"]
+"a"->"d"[label="6"]
+"b";
+"b"->"c"[label="1"]
+"b"->"d"[label="2"]
+"c";
+"c"->"f"[label="3"]
+"d";
+"d"->"f"[label="5"]
+"e";
+"f";
+"f"->"e"[label="4"]
+}

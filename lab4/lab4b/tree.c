@@ -531,13 +531,10 @@ int delete(Tree *tree, Node *rt, char *key, Item *del)
 					if (rt->ptr[y + 1]->ptr[0]) rt->ptr[y + 1]->ptr[0]->par = rt->ptr[y];
 					free_item(&rt->ptr[y + 1]->items[0]);
 					shift_node(rt->ptr[y + 1], -1);			
-					rt->ptr[y]->num_i++;
-					rt->ptr[y + 1]->num_i--;	
+					rt->ptr[y]->num_i++;	
 					if (rt->ptr[y]->ptr[2])	
 					{
-						rt->ptr[y + 1]->num_p--;
 						rt->ptr[y]->num_p++;	
-						
 					}		
 				}				
 				
