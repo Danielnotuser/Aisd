@@ -135,6 +135,7 @@ int delete_edge(Graph *graph, char *from_name, char *to_name)
 	int to, j;
 	for (int i = 0; i < graph->vert_num; i++)
 	{
+		to = -1;
 		if (!strcmp(graph->verts[i].name, from_name))
 		{
 			for (j = 0; j < graph->verts[i].edge_num; j++)
@@ -145,6 +146,7 @@ int delete_edge(Graph *graph, char *from_name, char *to_name)
 					break;
 				}
 			}
+			if (to < 0) return 1;
 			for (int k = j; k < graph->verts[i].edge_num - 1; k++)
 				graph->verts[i].edges[k] = graph->verts[i].edges[k + 1];
 			graph->verts[i].edge_num--;
@@ -161,6 +163,7 @@ int delete_edge(Graph *graph, char *from_name, char *to_name)
 					break;
 				}
 			}
+			if (to < 0) return 1;
 			for (int k = j; k < graph->verts[i].edge_num - 1; k++)
 				graph->verts[i].edges[k] = graph->verts[i].edges[k + 1];
 			graph->verts[i].edge_num--;			
@@ -226,24 +229,27 @@ static int reachable(int *ports, int port_num, int port)
 	return 0;	
 }
 
-static void dfs(Graph *graph, int *visited, int ind)
+static void dfs(Graph *graph, int *visited, int ind, int port)
 {
 	visited[ind] = 1;
-	printf("%s ", graph->verts[ind].name);
 	for (int i = 0; i < graph->verts[ind].edge_num; i++)
 	{
-		if (graph->verts[graph->verts[ind].edges[i]->from].port == graph->verts[graph->verts[ind].edges[i]->to].port 
-			&& reachable(graph->verts[ind].edges[i]->ports, graph->verts[ind].edges[i]->port_num, graph->verts[ind].port))
+		if (graph->verts[ind].edges[i]->from == ind && !visited[graph->verts[ind].edges[i]->to] &&
+		reachable(graph->verts[ind].edges[i]->ports, graph->verts[ind].edges[i]->port_num, port))
 		{
-			if (graph->verts[ind].edges[i]->from == ind && !visited[graph->verts[ind].edges[i]->to])
-				dfs(graph, visited, graph->verts[ind].edges[i]->to);
-			else if (graph->verts[ind].edges[i]->to == ind && !visited[graph->verts[ind].edges[i]->from])
-				dfs(graph, visited, graph->verts[ind].edges[i]->from);			
+			if (graph->verts[graph->verts[ind].edges[i]->to].port == port) printf("%s ", graph->verts[graph->verts[ind].edges[i]->to].name);
+			dfs(graph, visited, graph->verts[ind].edges[i]->to, port);
 		}
+		else if (graph->verts[ind].edges[i]->to == ind && !visited[graph->verts[ind].edges[i]->from] &&
+		reachable(graph->verts[ind].edges[i]->ports, graph->verts[ind].edges[i]->port_num, port))
+		{	
+			if (graph->verts[graph->verts[ind].edges[i]->from].port == port) printf("%s ", graph->verts[graph->verts[ind].edges[i]->from].name);
+			dfs(graph, visited, graph->verts[ind].edges[i]->from, port);
+		}			
 	}
 }
 
-int dfs_init(Graph *graph, char *name)
+int dfs_init(Graph *graph, char *name, int port)
 {
 	int *visited = (int*) calloc(graph->vert_num, sizeof(int));
 	int ind = -1;
@@ -258,12 +264,8 @@ int dfs_init(Graph *graph, char *name)
 		free(visited);
 		return 1;
 	}
-	dfs(graph, visited, ind);
-	for (int i = 0; i < graph->vert_num; i++)
-	{
-		if (!visited[i])
-			dfs(graph, visited, i);
-	}
+	printf("Reachable computers with this port: ");
+	dfs(graph, visited, ind, port);
 	printf("\n");
 	free(visited);
 	return 0;
@@ -330,7 +332,7 @@ void partition(Graph *graph)
 
 int dijkstra(Graph *graph, int ind_from, int ind_to, int *path)
 {
-	int len = graph->vert_num, min, min_ind;
+	int len = graph->vert_num, min, min_ind, dest_port = graph->verts[ind_to].port;
 	int *visited = (int*) calloc(len, sizeof(int));
 	int *dist = (int*) calloc(len, sizeof(int));
 	int *prev = (int*) calloc(len, sizeof(int));
@@ -357,21 +359,19 @@ int dijkstra(Graph *graph, int ind_from, int ind_to, int *path)
 			break;
 		for (int j = 0; j < graph->verts[min_ind].edge_num; j++)
 		{
-			if (graph->verts[graph->verts[min_ind].edges[j]->from].port == graph->verts[graph->verts[min_ind].edges[j]->to].port 
-				&& reachable(graph->verts[min_ind].edges[j]->ports, graph->verts[min_ind].edges[j]->port_num, graph->verts[min_ind].port))
+			int new_dist = dist[min_ind] + graph->verts[min_ind].edges[j]->delay;
+			if (reachable(graph->verts[min_ind].edges[j]->ports, graph->verts[min_ind].edges[j]->port_num, dest_port) &&
+				min_ind != graph->verts[min_ind].edges[j]->to && new_dist < dist[graph->verts[min_ind].edges[j]->to])
 			{
-				int new_dist = dist[min_ind] + graph->verts[min_ind].edges[j]->delay;
-				if (min_ind != graph->verts[min_ind].edges[j]->to && new_dist < dist[graph->verts[min_ind].edges[j]->to])
-				{
-					dist[graph->verts[min_ind].edges[j]->to] = new_dist;
-					prev[graph->verts[min_ind].edges[j]->to] = min_ind;
-				}
-				else if (min_ind == graph->verts[min_ind].edges[j]->to && new_dist < dist[graph->verts[min_ind].edges[j]->from])
-				{
-					dist[graph->verts[min_ind].edges[j]->from] = new_dist;
-					prev[graph->verts[min_ind].edges[j]->from] = min_ind;				
-				}				
+				dist[graph->verts[min_ind].edges[j]->to] = new_dist;
+				prev[graph->verts[min_ind].edges[j]->to] = min_ind;
 			}
+			else if (reachable(graph->verts[min_ind].edges[j]->ports, graph->verts[min_ind].edges[j]->port_num, dest_port) &&
+				min_ind == graph->verts[min_ind].edges[j]->to && new_dist < dist[graph->verts[min_ind].edges[j]->from])
+			{
+				dist[graph->verts[min_ind].edges[j]->from] = new_dist;
+				prev[graph->verts[min_ind].edges[j]->from] = min_ind;				
+			}				
 
 		}
 		visited[min_ind] = 1;

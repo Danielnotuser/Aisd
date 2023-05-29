@@ -246,7 +246,10 @@ int dlg_detour(Graph *graph)
 	printf("Enter vertex from which DFS will start: ");
 	if (read_str(&name)) return 1;
 	name = (char*) realloc(name, strlen(name) + 1);
-	int err = dfs_init(graph, name);
+	int port;
+	printf("Enter port: ");
+	if (read_nat(&port)) return 1;
+	int err = dfs_init(graph, name, port);
 	if (err)
 		printf("Error! No such vertex.\n");
 	free(name);

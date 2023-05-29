@@ -33,7 +33,7 @@ int delete_edge(Graph*, char*, char*);
 int change_vertex(Graph*, char*, char*, int);
 int change_edge(Graph*, char*, char*, int, int*, int);
 void free_graph(Graph*);
-int dfs_init(Graph*, char*);
+int dfs_init(Graph*, char*, int);
 int dijkstra(Graph*, int, int, int*);
 void partition(Graph*);
 void show_matr(Graph*);
