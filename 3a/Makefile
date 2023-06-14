@@ -1,3 +1,3 @@
 all:
-	gcc *.c -o lab -g
+	gcc -o lab *.c -g
 	valgrind --leak-check=full ./lab
